@@ -1,0 +1,147 @@
+---
+title: "Tidy Tuesday - NCAA March Madness - Trung Dam"
+author: "Trung Dam"
+date: "2024-04-26"
+output: html_document
+---
+
+```{r loading libraries, echo=FALSE, message=FALSE}
+library(dplyr)
+library(ggplot2)
+library(stringr)
+library(tidyr)
+library(ggpubr)
+```
+
+```{r loading data, echo=FALSE, message=FALSE, warning=FALSE}
+team_results <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2024/2024-03-26/team-results.csv')
+public_picks <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2024/2024-03-26/public-picks.csv')
+
+clean_percentcolumn <- function(column) {
+  as.numeric(str_replace(column, pattern = "%", replacement = ""))
+}
+
+name_adjust <- function(df, index) {
+  names(df)[index] <- str_c("numAppearance_", names(df)[index])
+  return(df)
+}
+
+for (index in c(11:18)) {
+  team_results <- name_adjust(team_results, index = index)
+}
+
+
+
+public_picks$R64 <- clean_percentcolumn(public_picks$R64)
+public_picks$R32 <- clean_percentcolumn(public_picks$R32)
+public_picks$S16 <- clean_percentcolumn(public_picks$S16)
+public_picks$E8 <- clean_percentcolumn(public_picks$E8)
+public_picks$F4 <- clean_percentcolumn(public_picks$F4)
+public_picks$FINALS <- clean_percentcolumn(public_picks$FINALS)
+team_results$F4PERCENT <- clean_percentcolumn(team_results$F4PERCENT)
+team_results$CHAMPPERCENT <- clean_percentcolumn(team_results$CHAMPPERCENT)
+
+ncaa2024 <- public_picks %>% left_join(team_results, by = "TEAM") %>% select(! c(YEAR,TEAMNO,TEAMID))
+```
+
+The data is from 2008 - 2024 for the men's teams. The year 2020 is not included because the tournament was canceled due to Covid. The first column of almost every dataset displays the year the data is from.
+
+# Research Question
+1. Would the amount of times the team make it to a certain round influence the public picks for the time to win a game in that round?
+2. Are teams with more experiences in previous tournaments likely to have champion gene? 
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+X1 <- ggplot(ncaa2024 %>% head(32), aes(x = TEAM)) +
+  geom_point(aes(y = R64),shape = 18, color = "forestgreen",size = 3) + 
+  geom_point(aes(y = numAppearance_R64), color = "darkblue") +   
+  scale_y_continuous(name = "Percent Round 64", sec.axis = sec_axis(~., name = "Total Appearances in Round 64")) +  
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5),
+        axis.title.y = element_text(color = "forestgreen", size = 9),
+        axis.title.y.right = element_text(color = "darkblue", angle = 90),
+        axis.text.y = element_text(color = "forestgreen"),
+        axis.text.y.right = element_text(color = "darkblue"))+  # Adjust plot theme if needed
+  labs(title = "Predicted Winning Percentages & Total Games Won of First 32 teams NCAA 2024 Rounds 64")
+
+X2 <- ggplot(ncaa2024 %>% tail(32), aes(x = TEAM)) +
+  geom_point(aes(y = R64),shape = 18, color = "forestgreen",size = 3) + 
+  geom_point(aes(y = numAppearance_R64), color = "darkblue") +   
+  scale_y_continuous(name = "Percent Round 64", sec.axis = sec_axis(~., name = "Total Appearances in Round 64")) +  
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5),
+        axis.title.y = element_text(color = "forestgreen", size = 9),
+        axis.title.y.right = element_text(color = "darkblue", angle = 90),
+        axis.text.y = element_text(color = "forestgreen"),
+        axis.text.y.right = element_text(color = "darkblue"))+  # Adjust plot theme if needed
+  labs(title = "Predicted Winning Percentages & Total Games Won of Last 32 teams NCAA 2024 Rounds 64")
+
+X3 <- ggplot(ncaa2024, aes(x = numAppearance_R64, y = R64))+
+  geom_point()+
+  geom_smooth()+
+  theme_minimal()+
+  labs(title = "Predicted Winning Percentages vs. Total Games Won NCAA 2024 Rounds 64", y = "Percent Round 64", x = "Total Appearances in Round 64")
+
+main_plot1 <- ggarrange(X1, X2, X3, ncol = 2, nrow = 2, align = "v")
+main_plot1
+
+Y1 <- ggplot(ncaa2024 %>% head(32), aes(x = TEAM)) +
+  geom_point(aes(y = FINALS),shape = 18, color = "forestgreen",size = 3) + 
+  geom_point(aes(y = numAppearance_F2), color = "darkblue") +   
+  scale_y_continuous(name = "Percent Finals", sec.axis = sec_axis(~., name = "Total Appearances in the Finals")) +  
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5),
+        axis.title.y = element_text(color = "forestgreen", size = 9),
+        axis.title.y.right = element_text(color = "darkblue", angle = 90),
+        axis.text.y = element_text(color = "forestgreen"),
+        axis.text.y.right = element_text(color = "darkblue"))+  # Adjust plot theme if needed
+  labs(title = "Predicted Winning Percentages & Total Games Won of First 32 teams NCAA 2024 Finals")
+
+Y2 <- ggplot(ncaa2024 %>% tail(32), aes(x = TEAM)) +
+  geom_point(aes(y = FINALS),shape = 18, color = "forestgreen",size = 3) + 
+  geom_point(aes(y = numAppearance_F2), color = "darkblue") +   
+  scale_y_continuous(name = "Percent Finals", sec.axis = sec_axis(~., name = "Total Appearances in the Finals")) +  
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5),
+        axis.title.y = element_text(color = "forestgreen", size = 9),
+        axis.title.y.right = element_text(color = "darkblue", angle = 90),
+        axis.text.y = element_text(color = "forestgreen"),
+        axis.text.y.right = element_text(color = "darkblue"))+  # Adjust plot theme if needed
+  labs(title = "Predicted Winning Percentages & Total Games Won of Last 32 teams NCAA 2024 Finals")
+
+Y3 <- ncaa2024 %>% filter(!is.na(numAppearance_F2)) %>% ggplot(aes(x = numAppearance_F2, y = FINALS))+
+  geom_point()+
+  theme_minimal()+
+  labs(title = "Predicted Winning Percentages vs. Total Games Won NCAA 2024 Finals", y = "Percent Finals", x = "Total Appearances in the Finals")
+
+main_plot2 <- ggarrange(Y1, Y2, Y3, ncol = 2, nrow = 2, align = "v")
+main_plot2
+```
+
+The NCAA March Madness is a single-elimination tournament of 64 D1 basketball teams that compete in seven rounds for the national championship. Every year, ESPN and other sport broadcast websites will create an online platform where basketball audiences can submit their "dream" brackets in which they guess which team will advance into the next round and win the biggest award. With the data in hand, I am curious to look at if people consider one team's historical winning record to make their guesses on how many percentages that team will survive after each round. Two rounds that I decided to look closer at is Round 64 and the Finals. Round 64, in my opinion, is the round where we can detect the "dark horse" of the tournament. The "dark horse" is a term refers to a team that might not do well in the past but can make a big leap/run in the tournament. On the other hands, for the Finals, people tend to pick either their favorite teams or teams that had Finals experience in the past. 
+
+# Round 64
+During Round 64, it is understandable that people always go for the safe options to keep their brackets alive. Indeed, the overall trend is teams with better performance in the past would be predicted to survive the first round. However, some peole decided to go with new faces of NCAA 2024. Steston and Grambling St made their debuts this tournament. Dusquenne also made their first return to the tournament since 1977. So do Samford, McNeese, and Wagner. Since these are some teams' first debuts to the tournament, there wouldn't be any information on their previous performance. However, people still believe some of the team can be the "dark horse" of the seasons, evidently predicting McNeese and Dusquenne 25% moving to the first round. Dusquenne delivered, beating BYU who was predicted 75% winning the Round 64, and survived the first round after losing to Illinois in the Round 32.
+
+# Finals
+For the Finals prediction, many people went with the reigning champion: University of Connecticut. The only team that previously had multiple Finals appearances that was predicted to be in the Finals this year is University of North Carolina. However, they came up short and lost in the Elite Eight. The commonalities among Finals favorite this year are the teams didn't necessarily have good winning records in the past and their rosters had a lot of quality freshmen. For instance, Purdue University is one of the favorites to win it all despite never making it to the Finals before. Purdue this year, has one of the most dominant D1 basketball player of all time - Zach Edey.
+
+Looking at these two rounds, audience also takes into account of teams' current roster to make their prediction, not solely based theirs on teams's historical records. However, it makes complete sense that people would favor their home team or team that historically took home the trophy.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ncaa2024 %>% ggplot(aes(x = CHAMPPERCENT, y = GAMES))+
+  geom_point()+
+  geom_text(data = ncaa2024 %>% filter(CHAMPPERCENT > 40), aes(label = TEAM), vjust = 1.5)+
+  theme_minimal()+
+  labs(title = "Do more games played in NCAA March Madness mean \n higher chance of winning a championship?", y ="Total of games played", x = "Likelihood of winning AT LEAST 1 championship")
+
+ncaa2024 %>% ggplot(aes(x = numAppearance_CHAMP, y = GAMES))+
+  geom_point()+
+  geom_text(data = ncaa2024 %>% filter(numAppearance_CHAMP > 0), aes(label = TEAM), vjust = 1.5)+
+  theme_minimal()+
+  labs(title = "Experience more games in March Madness = Increase of Championship Gene?", y ="Total of games played", x = "Total of championship won")
+
+```
+
+# Interpretation
+
+Experts from PASE and PAKE believe that the more experiences a team have in the tournaments, the more likely for that team to win a championship. The first graph shows that teams such as UNC, Duke University, Gonzaga, or University of Kentucky have the highest chance of winning it all with their rigorous and frequent NCAA experiences. However, looking deeper into the relationship of total games played and total number of championship, I observe that number of games doesn't necessarily dictate the total of championship won. Evidently, UConn, despite playing fewer games compared to UNC, Duke University, or Kansas University, won more championship. Also, Gonzago hasn't won any championship despite a rich history in March Madness. Therefore, to fully understand the championship gene in each team, it is helpful to have access to teams' chemistry, alum system that can help with coaching or player development, and fan base. 

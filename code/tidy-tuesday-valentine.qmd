@@ -1,0 +1,117 @@
+---
+title: "Tidy Tuesday - Valentine Days - Trung Dam"
+output: html_document
+date: "2024-02-29"
+---
+
+```{r setup, include=FALSE, echo=FALSE, message=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+
+historical_spending <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2024/2024-02-13/historical_spending.csv')
+gifts_age <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2024/2024-02-13/gifts_age.csv')
+gifts_gender <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2024/2024-02-13/gifts_gender.csv')
+```
+
+```{r Exploratory historical data, echo=FALSE, message=FALSE, warning=FALSE}
+percentCelebrating_2011 <- 60
+historical_spending %>% mutate(percent_changes = PercentCelebrating - percentCelebrating_2011) %>% 
+  ggplot(aes(x = Year, y = percent_changes))+
+  geom_col(fill = "#FF9BA8")+
+  labs(title = "Changes in percentage of people celebrating Valentine from 2011 to 2022", y = "Percent changes (%)")+
+  theme(plot.title = element_text(face = "bold"))+
+  theme_classic()
+
+```
+
+# Interpretation
+
+The percentages of people celebrating Valentine reduced annually from 2011 to 2022. This could be due to various reasons. One might be couples were more used to showing romantic gestures in a daily basis, indirectly normalizing the importance of Valentine days. In 2019, there was a plummet in the percentage of people celebrating Valentines. This is likely because of the disrupting effects of Covid-19 on society and people's ability to interact with each other.
+
+```{r Explore gifts_gender data, echo=FALSE, message=FALSE, warning=FALSE}
+final_gifts_gender <- gifts_gender %>% select(-SpendingCelebrating) %>%
+  pivot_longer(
+  cols = -Gender,
+  names_to = "Categories",
+  values_to = "Value"
+) %>% pivot_wider(
+  names_from = "Gender",
+  values_from = "Value"
+) %>% mutate(gift_proportion = Men*100/Women, difference = 100 - gift_proportion, 
+             check = difference > 0)
+
+final_gifts_gender %>% ggplot(aes(x = Categories, y = difference, fill = check))+
+  geom_col()+
+  scale_fill_manual(values = c("red","black"), name = "Higher percentage", labels = c("Men", "Women")) +
+  labs(title = "What are the go-to gifts of men and women in Valentines?", y = "Percent differences (%)", x = "Choices")+
+  theme(plot.title = element_text(face = "bold"))+
+  theme_classic()
+```
+
+# Interpretation
+From this graph, men are more inclined to purchase flowers or jewelry for their Valentines than women are. It would be interesting if we have some data on marriage/engaged proposal during Valentine. On the other hand, women gifted daily necessities, such as clothes or game gift cards. This might due to their meticulous attention to their boyfriend's interest or wishes. Moreover, the percentage of women buying greeting cards exceeds men's. Therefore, having some data on relationship stage during these Valentines day would be interesting to look at how that affects their choices of gifts.
+
+```{r Explore gifts_age data, echo=FALSE, message=FALSE, warning=FALSE}
+color_theme <- c("#AE123A", "#C11A3B", "#D72E3E", "#EB4F48","#F8806A","#FEB1A3")
+gifts_age %>% ggplot(aes(x = Age, y = SpendingCelebrating, fill = SpendingCelebrating))+ 
+  geom_col()+ 
+  # scale_fill_manual(values = c("#AE123A", "#C11A3B", "#D72E3E", "#EB4F48","#F8806A","#FEB1A3"))+
+  labs(title = "Trends of celebrating Valentines in different age groups", y = "Percentage of celebrating (%)", x = "Age groups")+
+  theme(plot.title = element_text(face = "bold"))+
+  theme_classic()
+```
+
+# Interpretation
+This decreasing trend in Valentine celebration amongst age groups is predictable. As people grow older, their love affections change as couples get married as well as have children. Getting busier with works, children, and other life aspects contributed to this decrease. Moreover, as people begin to reach their life expectancy ages, the one who stays usually stop bothering to celebrate Valentines. Also, it is reasonable for the youths to showcase their love with their partners during Valentines; whereas older generations spend everyday with their partners, might find it less compelling for them to celebrate.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+final_gifts_age <- gifts_age %>% select(-SpendingCelebrating) %>%
+  pivot_longer(
+  cols = -Age,
+  names_to = "Categories",
+  values_to = "Value"
+) %>% pivot_wider(
+  names_from = "Age",
+  values_from = "Value"
+)
+
+par(mfcol = c(2, 3))
+
+x <- final_gifts_age %>% ggplot(aes(y = `18-24`, x = Categories))+
+  geom_col(fill = "#6F8FAF")+
+  theme_classic()
+x <- x+theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+
+a <- final_gifts_age %>% ggplot(aes(y = `25-34`, x = Categories))+
+  geom_col( fill = "#614051")+
+  theme_classic()
+a <- a+theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+
+b <- final_gifts_age %>% ggplot(aes(y = `35-44`, x = Categories   ))+
+  geom_col(fill = "#004d24")+
+  theme_classic()
+b <- b+theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+
+c <- final_gifts_age %>% ggplot(aes(y = `45-54`, x = Categories))+
+  geom_col(fill = "#79989B" )+
+  theme_classic()
+c <- c+theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+
+d <- final_gifts_age %>% ggplot(aes(y = `55-64`, x = Categories ))+
+  geom_col(fill = "#F5F5DC")+
+  theme_classic()
+d <- d+theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+
+e <- final_gifts_age %>% ggplot(aes(y = `65+`, x = Categories ))+
+  geom_col(fill = "darkgrey" )+
+  theme_classic()
+e <- e+theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+
+main_plot <- ggarrange(x, a, b, c, d, e, ncol = 3, nrow = 2, heights = c(10, 10, 20), align = "v")
+
+annotate_figure(
+      annotate_figure(main_plot, top = text_grob("Percentage of gift choices amongst different age groups", color = "darkgray", size = 8)),
+      top = text_grob("Anything changes overtime?", 
+              size = 12, face = "bold"))
+```
